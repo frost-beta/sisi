@@ -7,7 +7,7 @@ import {loadModel, loadClip} from './model.js';
 import {buildIndex, getIndexPath, writeIndexToDisk, readIndexFromDisk} from './indexing.js';
 
 /**
- * The `sisi index` command.
+ * Build index for the dir.
  */
 export async function index(targetDir: string) {
   // Read existing index.
@@ -29,7 +29,7 @@ export async function index(targetDir: string) {
   // Download and load model.
   const model = await loadModel();
   // Create progress bar for indexing.
-  console.log(`${index.size == 0 ? 'Building' : 'Updating'} index for ${totalFiles.count} images...`);
+  console.log(`${index.has(targetDir) ? 'Build' : 'Updat'}ing index for ${totalFiles.count} images...`);
   const bar = new SingleBar({
     format: '{bar} | ETA: {eta}s | {value}/{total}',
   }, Presets.shades_grey);
@@ -44,30 +44,45 @@ export async function index(targetDir: string) {
 }
 
 /**
- * The `sisi search` command.
+ * Search the query string from index.
  */
 export async function search(query: string, targetDir?: string) {
   // List all the embeddings of images under targetDir from the index.
   const index = await readIndexFromDisk();
-  const choices: {filePath: string, embedding: number[]}[] = [];
+  const images: {filePath: string, embedding: number[]}[] = [];
   for (const [ dir, value ] of index.entries()) {
     if (targetDir && !dir.startsWith(targetDir))  // not match target dir
       continue;
     if (!value.files)  // dir contains no files
       continue;
     for (const file of value.files)
-      choices.push({filePath: `${dir}/${file.name}`, embedding: file.embedding});
+      images.push({filePath: `${dir}/${file.name}`, embedding: file.embedding});
   }
-  // Find the matching ones.
+  // As we are handling only one query, just load the model in main thread.
   const clip = await loadClip();
+  // Compute cosine similaries between the query and all the images.
   const {labelEmbeddings} = clip.computeEmbeddings({labels: [ query ]});
-  const imageEmbeddings = mx.array(choices.map(c => c.embedding));
+  const imageEmbeddings = mx.array(images.map(c => c.embedding));
   const scores = nn.losses.cosineSimilarityLoss(labelEmbeddings, imageEmbeddings);
+  // Get the indices sorted by higher scores.
   const topIndices = mx.argsort(scores).index(mx.Slice(null, null, -1));
+  // Settings for the results, should probably be made options.
+  const maxResults = 20;
+  const goodScore = 0.2;
+  let bottomLineScore = 0.16;
+  // Prepare the results.
   const results: {filePath: string, score: number}[] = [];
-  for (let i = 0; i < topIndices.size; ++i) {
-    const score = scores.index(topIndices.index(i));
-    results.push({filePath: choices[i].filePath, score});
+  for (let i = 0; i < Math.min(topIndices.size, maxResults); ++i) {
+    const index = topIndices.index(i);
+    const score = scores.index(index).item() as number;
+    if (score > goodScore) {
+      // When there is good result, we don't need the not-so-good results.
+      bottomLineScore = goodScore;
+    } else if (score < bottomLineScore) {
+      // No need to continue after seeing a bad result.
+      break;
+    }
+    results.push({filePath: images[index.item() as number].filePath, score});
   }
   console.log(results);
 }

@@ -3,6 +3,8 @@
   "version": "0.0.1-dev",
   "description": "Semantic image search, locally without Internet",
   "type": "module",
+  "main": "./dist/sisi.js",
+  "types": "./dist/sisi.d.ts",
   "bin": {
     "sisi": "dist/cli.js"
   },
@@ -11,11 +13,7 @@
   },
   "author": "zcbenz",
   "license": "MIT",
-  "keywords": [
-    "mlx",
-    "search",
-    "image"
-  ],
+  "keywords": [ "mlx", "search", "image" ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/frost-beta/sisi.js.git"

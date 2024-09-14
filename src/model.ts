@@ -38,7 +38,8 @@ export interface BatchResponse {
 }
 
 /**
- * Delegates a worker which runs the actual model.
+ * A pipeline that does image processing in current thread and embedding
+ * computation in the worker.
  */
 export class Model {
   private worker: Worker;

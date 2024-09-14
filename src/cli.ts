@@ -27,7 +27,7 @@ export class IndexCommand extends Command {
 export class SearchCommand extends Command {
   static paths = [ [ 'search' ] ];
   static usage = Command.Usage({
-    description: 'Search the query string in the index.',
+    description: 'Search the query string from indexed images.',
     examples: [
       [
         'Search "cat" in all files in the index',
