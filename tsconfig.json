@@ -5,6 +5,7 @@
     "declaration": true,
     "allowJs": false,
     "module": "nodenext",
+    "resolveJsonModule": true,
     "target": "es2023",
     "lib": [ "esnext" ]
   },

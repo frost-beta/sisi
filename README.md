@@ -18,14 +18,23 @@ npm install -g @frost-beta/sisi
 CLI:
 
 ```console
+━━━ Semantic Image Search CLI - 0.0.1-dev ━━━━━━━━━━━━━━━━
+
+  $ sisi <command>
+
+━━━ General commands ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  sisi index <target>
+    Build or update index for images under target directory.
+
 ```
 
 ## Examples
 
-Build index under current directory:
+Build index for `~/Pictures/`:
 
 ```console
-sisi index
+sisi index ~/Pictures/
 ```
 
 Search images with text:
