@@ -4,7 +4,7 @@
   "description": "Semantic image search, locally without Internet",
   "type": "module",
   "bin": {
-    "sisi": "dist/sisi.js"
+    "sisi": "dist/cli.js"
   },
   "scripts": {
     "prepack": "tsc"
@@ -32,6 +32,7 @@
   "dependencies": {
     "@frost-beta/clip": "1.2.1",
     "@frost-beta/huggingface": "0.1.2",
+    "@frost-beta/mlx": "0.0.18",
     "@henrygd/queue": "1.0.6",
     "bser": "2.1.1",
     "cli-progress": "3.12.0",

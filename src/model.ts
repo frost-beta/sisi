@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {existsSync} from 'node:fs';
 import {Worker} from 'node:worker_threads';
-import {ProcessedImage, ClipImageProcessor, loadImageProcessor} from '@frost-beta/clip';
+import {ProcessedImage, ClipImageProcessor, Clip, loadImageProcessor} from '@frost-beta/clip';
 import * as hub from '@frost-beta/huggingface';
 import * as queue from '@henrygd/queue';
 
@@ -144,10 +144,17 @@ export class Model {
 }
 
 /**
- * Create the model.
+ * Create the proxy model.
  */
 export async function loadModel() {
   return new Model(await getModelDir());
+}
+
+/**
+ * Create the CLIP model.
+ */
+export async function loadClip() {
+  return new Clip(await getModelDir());
 }
 
 /**

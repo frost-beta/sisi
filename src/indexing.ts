@@ -3,7 +3,7 @@ import path from 'node:path';
 import bser from 'bser';
 
 import {Model} from './model.js';
-import type {FSItem, TotalFilesInfo} from './fs.js';
+import {FSItem, TotalFilesInfo, getCacheDir} from './fs.js';
 
 // The JSON format for storing the index on disk.
 interface IndexDatabase {
@@ -98,11 +98,18 @@ export async function buildIndex(model: Model,
 }
 
 /**
+ * Return the path to the index file.
+ */
+export function getIndexPath() {
+  return `${getCacheDir()}/index.bser`;
+}
+
+/**
  * Write the index to a BSER file on disk.
  * @param index
  * @param indexPath - The BSER file to write to.
  */
-export async function writeIndexToDisk(index: IndexMap, indexPath: string) {
+export async function writeIndexToDisk(index: IndexMap, indexPath = getIndexPath()) {
   await fs.mkdir(path.dirname(indexPath), {recursive: true});
   const buffer = bser.dumpToBuffer({
     version: 1,
@@ -115,7 +122,7 @@ export async function writeIndexToDisk(index: IndexMap, indexPath: string) {
  * Read the index from BSER file on disk.
  * @param indexPath - The BSER file to read from.
  */
-export async function readIndexFromDisk(indexPath: string): Promise<IndexMap> {
+export async function readIndexFromDisk(indexPath = getIndexPath()): Promise<IndexMap> {
   try {
     const buffer = await fs.readFile(indexPath);
     const json = bser.loadFromBuffer(buffer);
