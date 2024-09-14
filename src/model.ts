@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {existsSync} from 'node:fs';
 import {Worker} from 'node:worker_threads';
+import {ProcessedImage, ClipImageProcessor, loadImageProcessor} from '@frost-beta/clip';
 import * as hub from '@frost-beta/huggingface';
 import * as queue from '@henrygd/queue';
 
@@ -14,7 +15,7 @@ const batchSize = 5;
  * Each item kept in batch.
  */
 export interface BatchItem {
-  data: Buffer;
+  image: ProcessedImage;
   resolver: PromiseWithResolvers<number[]>;
 }
 
@@ -24,7 +25,7 @@ export interface BatchItem {
 export interface BatchMessage {
   id: number;
   labels?: string[];
-  images?: ArrayBuffer[];
+  images?: ProcessedImage[];
 }
 
 /**
@@ -41,14 +42,16 @@ export interface BatchResponse {
  */
 export class Model {
   private worker: Worker;
+  private imageProcessor: ClipImageProcessor;
   // Images are passed to model by batch, which is more efficient.
   private batch: BatchItem[] = [];
-  // The queue ensures only one batch is sent at one time.
+  // Images are processed in parallel, but there is no need to go over what one
+  // batch can handle.
+  private queueProcessImage = queue.newQueue(batchSize);
+  // This queue holds 2 batches: one being processed and one to be.
+  private queueComputeEmbeddings = queue.newQueue(batchSize * 2);
+  // This queue ensures only one batch is sent at one time.
   private queueFlush = queue.newQueue(1);
-  // The queue holds 2 batches: one being processed and one to be.
-  private queueComputeImage = queue.newQueue(batchSize * 2);
-  // Files are read in parallel, but do not over what one batch can handle.
-  private queueReadFile = queue.newQueue(batchSize);
   // The ID is used for marking the message for communication.
   private nextId = 0;
 
@@ -63,15 +66,19 @@ export class Model {
     } else {
       this.worker = new Worker(`${import.meta.dirname}/worker.js`, options);
     }
+    this.imageProcessor = loadImageProcessor(modelDir);
   }
 
   /**
    * Get the embeddings for the image file located at filePath.
    * @param filePath - Path of the image file.
    */
-  async computeImageEmbedding(filePath: string): Promise<number[]> {
-    const data = await this.queueReadFile.add(() => fs.readFile(filePath));
-    return await this.queueComputeImage.add(() => this.addToBatch(data));
+  async computeImageEmbeddings(filePath: string): Promise<number[]> {
+    const image = await this.queueProcessImage.add(async () => {
+      const images = await this.imageProcessor.processImages([ filePath ]);
+      return images[0];
+    });
+    return await this.queueComputeEmbeddings.add(() => this.addToBatch(image));
   }
 
   /**
@@ -83,16 +90,16 @@ export class Model {
     this.worker.postMessage({id: 0});
   }
 
-  private async addToBatch(data: Buffer): Promise<number[]> {
+  private async addToBatch(image: ProcessedImage): Promise<number[]> {
     // The promise will be resolved when received its embeddings from worker.
     const resolver = Promise.withResolvers<number[]>();
     // Push the file and promise in batch.
-    this.batch.push({data, resolver});
+    this.batch.push({image, resolver});
     // Send the batch to model when:
     // 1. There is enough items in the batch;
     // 2. There is no more files coming and there is no batch being processed.
     if (this.batch.length >= batchSize ||
-        (this.queueFlush.size() == 0 && this.queueReadFile.size() == 0))
+        (this.queueFlush.size() == 0 && this.queueProcessImage.size() == 0))
       this.flush();
     // The caller will wait until the batch is handled.
     return resolver.promise;
@@ -111,8 +118,7 @@ export class Model {
     const batch = this.batch;
     this.batch = [];
     // Send images in the batch to the worker.
-    const images = batch.map(b => b.data.buffer);
-    this.worker.postMessage({id, images}, images);
+    this.worker.postMessage({id, images: batch.map(b => b.image)});
     // Wait until worker replies.
     return new Promise<void>((resolve, reject) => {
       this.worker.once('message', (response: BatchResponse) => {

@@ -66,7 +66,7 @@ export async function buildIndex(model: Model,
         return;
       }
       // Compute image's embedding and save it.
-      const embedding = await model.computeImageEmbedding(`${dir}/${name}`);
+      const embedding = await model.computeImageEmbeddings(`${dir}/${name}`);
       files.push({name, mtimeMs, embedding});
       progress.size += size;
       progress.count += 1;

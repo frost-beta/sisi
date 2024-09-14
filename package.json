@@ -30,7 +30,7 @@
     "typescript": "5.6.2"
   },
   "dependencies": {
-    "@frost-beta/clip": "1.1.1",
+    "@frost-beta/clip": "1.2.1",
     "@frost-beta/huggingface": "0.1.2",
     "@henrygd/queue": "1.0.6",
     "bser": "2.1.1",

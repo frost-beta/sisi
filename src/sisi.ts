@@ -17,12 +17,12 @@ async function index() {
 
   const totalFiles = {size: 0, count: 0};
   const items = await listImageFiles(target, totalFiles, index);
-  if (!items) {
-    console.error('No images under directory:', target);
-    return;
-  }
 
   if (totalFiles.count == 0) {
+    if (!index.has(target)) {
+      console.error('No images under directory:', target);
+      return;
+    }
     console.log('Index is up to date.');
     return;
   }
