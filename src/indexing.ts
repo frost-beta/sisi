@@ -26,14 +26,21 @@ interface IndexFileEntry {
 /**
  * Create index for the target directory.
  */
-export async function buildIndex(model: Model, target: string, index: IndexMap = new Map()) {
+export async function buildIndex(model: Model,
+                                 target: string,
+                                 items: FSItem[],
+                                 report: (progress: TotalFilesInfo) => void,
+                                 index: IndexMap = new Map()) {
+  // Record progress.
+  const progress: TotalFilesInfo = {size: 0, count: 0};
+  // Handle files in dir recursively.
   const buildIndexForDir = async (dir: string, items: FSItem[]) => {
     // Get old entry from index and prepare for new.
     const dirEntry: IndexDirEntry = index.get(dir) ?? {};
     let dirs: string[] = [];
     let files: IndexFileEntry[] = [];
     // Iterate all files.
-    await Promise.all(items.map(async ({name, mtimeMs, children}) => {
+    await Promise.all(items.map(async ({name, size, mtimeMs, children}) => {
       if (children) {
         await buildIndexForDir(`${dir}/${name}`, children);
         dirs.push(name);
@@ -46,6 +53,9 @@ export async function buildIndex(model: Model, target: string, index: IndexMap =
         } else {
           const embedding = await model.computeImageEmbedding(`${dir}/${name}`);
           files.push({name, mtimeMs, embedding});
+          progress.size += size;
+          progress.count += 1;
+          report(progress);
         }
       }
     }));
@@ -70,24 +80,32 @@ export async function buildIndex(model: Model, target: string, index: IndexMap =
       return false;
     }
   };
-  // Get all the image files under the target directory.
-  target = path.resolve(target);
-  const items = await listImageFiles(path.resolve(target));
-  // Build index for the files.
-  if (items)
-    await buildIndexForDir(target, items);
+  await buildIndexForDir(target, items);
   return index;
 }
 
-// A simple representation of filesystem.
-interface FSItem {
+/**
+ * Record total file sizes and numbers.
+ */
+export interface TotalFilesInfo {
+  size: number;
+  count: number;
+}
+
+/**
+ * A simple representation of filesystem.
+ */
+export interface FSItem {
   name: string;
+  size: number;
   mtimeMs: number;
   children?: FSItem[];
 }
 
-// Get all image files under the directory.
-async function listImageFiles(dir: string): Promise<FSItem[] | undefined> {
+/**
+ * Get all image files under the directory.
+ */
+export async function listImageFiles(dir: string, info: TotalFilesInfo): Promise<FSItem[] | undefined> {
   // Read stats of all files under the dir in parallel.
   const fileNames = await fs.readdir(dir);
   const stats = await Promise.all(fileNames.map(n => fs.stat(`${dir}/${n}`)));
@@ -95,13 +113,16 @@ async function listImageFiles(dir: string): Promise<FSItem[] | undefined> {
   // Iterate all files in parallel.
   await Promise.all(fileNames.map(async (name, i) => {
     const stat = stats[i];
+    const item = {name, size: stat.size, mtimeMs: stat.mtimeMs};
     if (stat.isDirectory()) {
       // Ignore the subdir if it contains no image files.
-      const children = await listImageFiles(`${dir}/${name}`);
+      const children = await listImageFiles(`${dir}/${name}`, info);
       if (children)
-        items.push({name, mtimeMs: stat.mtimeMs, children});
+        items.push({children, ...item});
     } else if (stat.isFile() && isFileNameImage(name)) {
-      items.push({name, mtimeMs: stat.mtimeMs});
+      info.size += stat.size;
+      info.count += 1;
+      items.push(item);
     }
   }));
   return items.length > 0 ? items : undefined;
