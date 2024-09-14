@@ -1,0 +1,14 @@
+# Unused source files
+/.github/
+/src/
+
+# Everything else should keep same with .gitignore
+*.swp
+*.tgz
+
+yarn.lock
+package-lock.json
+npm-debug.log
+yarn-error.log
+/node_modules/
+/clip-vit-*/

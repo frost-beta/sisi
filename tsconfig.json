@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": true,
+    "module": "nodenext",
+    "target": "es2023",
+    "lib": [ "esnext" ]
+  },
+  "include": [ "src" ],
+  "exclude": [ "node_modules" ]
+}

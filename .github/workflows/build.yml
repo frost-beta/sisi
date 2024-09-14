@@ -1,0 +1,62 @@
+name: build
+
+on: push
+
+jobs:
+  build:
+    runs-on: >-
+      ${{
+        (matrix.os == 'mac' && matrix.arch == 'arm64') &&
+          'macos-14' ||
+          (fromJson('{"linux":"ubuntu-22.04","mac":"macos-13","win":"windows-2022"}')[matrix.os])
+      }}
+    continue-on-error: false
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux, mac]
+        arch: [x64]
+        include:
+          - os: mac
+            arch: arm64
+
+    steps:
+      - name: Install mac dependencies
+        if: matrix.os == 'mac' && matrix.arch == 'x64'
+        run: brew install openblas
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test
+        run: |
+          yarn
+          yarn prepack
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get tag
+        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - name: Set package version
+        run: |
+          npm config set git-tag-version=false
+          npm version $VERSION
+
+      - name: Install deps
+        run: yarn
+
+      - name: Publish npm package
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          access: public
+          ignore-scripts: false

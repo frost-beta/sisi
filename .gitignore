@@ -1,0 +1,13 @@
+# TypeScript compiled files
+/dist/
+
+# Everything else should keep same with .npmignore
+*.swp
+*.tgz
+
+yarn.lock
+package-lock.json
+npm-debug.log
+yarn-error.log
+/node_modules/
+/clip-vit-*/

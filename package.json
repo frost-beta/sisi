@@ -1,0 +1,37 @@
+{
+  "name": "@frost-beta/sisi",
+  "version": "0.0.1-dev",
+  "description": "Semantic image search, locally without Internet",
+  "type": "module",
+  "bin": {
+    "sisi": "dist/sisi.js"
+  },
+  "scripts": {
+    "prepack": "tsc"
+  },
+  "author": "zcbenz",
+  "license": "MIT",
+  "keywords": [
+    "mlx",
+    "search",
+    "image"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frost-beta/sisi.js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/frost-beta/sisi.js/issues"
+  },
+  "devDependencies": {
+    "@types/node": "22.5.4",
+    "tsx": "4.19.1",
+    "typescript": "5.6.2"
+  },
+  "dependencies": {
+    "@frost-beta/clip": "1.1.1",
+    "@frost-beta/huggingface": "0.1.0",
+    "@henrygd/queue": "1.0.6",
+    "clipanion": "4.0.0-rc.4"
+  }
+}
