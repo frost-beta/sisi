@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
+import type {IndexMap} from './indexing.js';
+
 /**
  * Return the user's cache directory.
  */
@@ -40,15 +42,18 @@ export interface FSItem {
   name: string;
   size: number;
   mtimeMs: number;
+  needsUpdate: boolean;
   children?: FSItem[];
 }
 
 /**
- * Get all image files under the directory.
- * @param dir - The target directory to search for images.
- * @param info - Record the size and count of found image files.
+ * Get all files under the directory.
+ * @param dir - The target directory to search for files.
+ * @param info - Record the size and count of found files.
+ * @param index - Used for marking if an item needs update.
  */
-export async function listImageFiles(dir: string, info: TotalFilesInfo): Promise<FSItem[] | undefined> {
+export async function listImageFiles(dir: string, info: TotalFilesInfo, index?: IndexMap): Promise<FSItem[]> {
+  const dirEntry = index?.get(dir);
   // Read stats of all files under the dir in parallel.
   const fileNames = await fs.readdir(dir);
   const stats = await Promise.all(fileNames.map(n => fs.stat(`${dir}/${n}`)));
@@ -56,19 +61,29 @@ export async function listImageFiles(dir: string, info: TotalFilesInfo): Promise
   // Iterate all files in parallel.
   await Promise.all(fileNames.map(async (name, i) => {
     const stat = stats[i];
-    const item = {name, size: stat.size, mtimeMs: stat.mtimeMs};
+    const item: FSItem = {
+      name,
+      size: stat.size,
+      mtimeMs: stat.mtimeMs,
+      needsUpdate: true,
+    };
     if (stat.isDirectory()) {
-      // Ignore the subdir if it contains no image files.
-      const children = await listImageFiles(`${dir}/${name}`, info);
-      if (children)
-        items.push({children, ...item});
+      // Directories are always kept in results even if they contain no images,
+      // because we need the directory structure for updating index.
+      const children = await listImageFiles(`${dir}/${name}`, info, index);
+      items.push({children, ...item});
     } else if (stat.isFile() && isFileNameImage(name)) {
-      info.size += stat.size;
-      info.count += 1;
+      // Find out if the file has been modified since last indexing.
+      if (dirEntry?.files?.find(i => i.name == name)?.mtimeMs >= stat.mtimeMs)
+        item.needsUpdate = false;
+      if (item.needsUpdate) {
+        info.size += stat.size;
+        info.count += 1;
+      }
       items.push(item);
     }
   }));
-  return items.length > 0 ? items : undefined;
+  return items;
 }
 
 // The file extensions we consider as images.

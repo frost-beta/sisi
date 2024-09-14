@@ -8,24 +8,33 @@ import * as queue from '@henrygd/queue';
 
 import {getCacheDir, shortPath} from './fs.js';
 
+const batchSize = 5;
+
+/**
+ * Each item kept in batch.
+ */
 export interface BatchItem {
   data: Buffer;
   resolver: PromiseWithResolvers<number[]>;
 }
 
+/**
+ * The message sent to worker.
+ */
 export interface BatchMessage {
   id: number;
   labels?: string[];
   images?: ArrayBuffer[];
 }
 
+/**
+ * The response received from worker.
+ */
 export interface BatchResponse {
   id: number;
   labelEmbeddings?: number[][];
   imageEmbeddings?: number[][];
 }
-
-const batchSize = 5;
 
 /**
  * Delegates a worker which runs the actual model.
@@ -79,8 +88,11 @@ export class Model {
     const resolver = Promise.withResolvers<number[]>();
     // Push the file and promise in batch.
     this.batch.push({data, resolver});
-    // Send the batch to model when we get enough items in the batch.
-    if (this.batch.length >= batchSize)
+    // Send the batch to model when:
+    // 1. There is enough items in the batch;
+    // 2. There is no more files coming and there is no batch being processed.
+    if (this.batch.length >= batchSize ||
+        (this.queueFlush.size() == 0 && this.queueReadFile.size() == 0))
       this.flush();
     // The caller will wait until the batch is handled.
     return resolver.promise;

@@ -15,7 +15,7 @@ interface IndexDatabase {
 // contains lots of pictures and the depth of directories is rarely very deep.
 // In this way the index is a flat map where key is directory name and value is
 // the files under it.
-type IndexMap = Map<string, IndexDirEntry>;
+export type IndexMap = Map<string, IndexDirEntry>;
 
 interface IndexDirEntry {
   dirs?: string[];
@@ -29,7 +29,6 @@ interface IndexFileEntry {
   // record to simplify the code.
   embedding?: number[];
 }
-
 
 /**
  * Create index for the target directory.
@@ -53,30 +52,31 @@ export async function buildIndex(model: Model,
     let dirs: string[] = [];
     let files: IndexFileEntry[] = [];
     // Iterate all files.
-    await Promise.all(items.map(async ({name, size, mtimeMs, children}) => {
+    await Promise.all(items.map(async ({name, size, mtimeMs, needsUpdate, children}) => {
+      // Handle directories recursively.
       if (children) {
-        await buildIndexForDir(`${dir}/${name}`, children);
-        dirs.push(name);
-      } else {
-        // If the file is already in index and its modified time is not newer,
-        // then just keep it in index, otherwise recompute its embedding.
-        const fileItem = dirEntry.files?.find(i => i.name == name);
-        if (fileItem && mtimeMs <= fileItem.mtimeMs) {
-          files.push(fileItem);
-        } else {
-          const embedding = await model.computeImageEmbedding(`${dir}/${name}`);
-          files.push({name, mtimeMs, embedding});
-          progress.size += size;
-          progress.count += 1;
-          report(progress);
-        }
+        // Add directory to entry if it contains images.
+        if (await buildIndexForDir(`${dir}/${name}`, children))
+          dirs.push(name);
+        return;
       }
+      // Reuse the existing entry if it is not out-dated.
+      if (!needsUpdate) {
+        files.push(dirEntry.files!.find(i => i.name == name)!);
+        return;
+      }
+      // Compute image's embedding and save it.
+      const embedding = await model.computeImageEmbedding(`${dir}/${name}`);
+      files.push({name, mtimeMs, embedding});
+      progress.size += size;
+      progress.count += 1;
+      report(progress);
     }));
     // Remove entries from index if they no longer exist.
     if (dirEntry.dirs) {
       for (const old of dirEntry.dirs) {
         if (!dirs.includes(old))
-          index.delete(old);
+          index.delete(`${dir}/${old}`);
       }
     }
     // Add dir to index if it contains image files or its subdir does.
