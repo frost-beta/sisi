@@ -3,9 +3,10 @@ import os from 'node:os';
 import path from 'node:path';
 import {existsSync} from 'node:fs';
 import {Worker} from 'node:worker_threads';
-
 import * as hub from '@frost-beta/huggingface';
 import * as queue from '@henrygd/queue';
+
+import {getCacheDir, shortPath} from './fs.js';
 
 export interface BatchItem {
   data: Buffer;
@@ -142,23 +143,7 @@ async function getModelDir(model = 'openai/clip-vit-large-patch14'): Promise<str
       showProgress: true,
       filters: [ '*.json', '*.safetensors' ],
     });
-    console.log(`Model save to: ${modelDir.replace(os.homedir(), '~')}/`);
+    console.log(`Model saved to: ${shortPath(modelDir)}/`);
   }
   return modelDir;
-}
-
-/**
- * Return the user's cache directory.
- */
-function getCacheDir(): string {
-  const {env, platform} = process;
-  if (env.XDG_CACHE_HOME)
-    return `${env.XDG_CACHE_HOME}/sisi`;
-  if (platform == 'darwin')
-    return `${os.homedir()}/Library/Caches/sisi`;
-  if (platform != 'win32')
-    return `${os.homedir()}/.cache/sisi`;
-  if (env.LOCALAPPDATA)
-    return `${env.LOCALAPPDATA}/sisi-cache`;
-  return `${os.homedir()}/.sisi-cache`;
 }

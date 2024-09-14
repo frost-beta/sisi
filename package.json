@@ -33,6 +33,7 @@
     "@frost-beta/clip": "1.1.1",
     "@frost-beta/huggingface": "0.1.2",
     "@henrygd/queue": "1.0.6",
+    "bser": "2.1.1",
     "cli-progress": "3.12.0",
     "clipanion": "4.0.0-rc.4"
   }

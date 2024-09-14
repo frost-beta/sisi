@@ -1,7 +1,15 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import bser from 'bser';
 
 import {Model} from './model.js';
+import type {FSItem, TotalFilesInfo} from './fs.js';
+
+// The JSON format for storing the index on disk.
+interface IndexDatabase {
+  version: number,
+  index: [string, IndexDirEntry][];
+}
 
 // We assume pictures are stored in flat style, i.e. a single directory usually
 // contains lots of pictures and the depth of directories is rarely very deep.
@@ -25,6 +33,11 @@ interface IndexFileEntry {
 
 /**
  * Create index for the target directory.
+ * @param model - The CLIP model.
+ * @param target - Target directory which contains images.
+ * @param items - The items under the target directory.
+ * @param report - Callback for receiving the indexing progress.
+ * @param index - When specified, the passed index will be updated.
  */
 export async function buildIndex(model: Model,
                                  target: string,
@@ -85,54 +98,29 @@ export async function buildIndex(model: Model,
 }
 
 /**
- * Record total file sizes and numbers.
+ * Write the index to a BSER file on disk.
+ * @param index
+ * @param indexPath - The BSER file to write to.
  */
-export interface TotalFilesInfo {
-  size: number;
-  count: number;
+export async function writeIndexToDisk(index: IndexMap, indexPath: string) {
+  await fs.mkdir(path.dirname(indexPath), {recursive: true});
+  const buffer = bser.dumpToBuffer({
+    version: 1,
+    index: Array.from(index.entries()),
+  });
+  await fs.writeFile(indexPath, buffer);
 }
 
 /**
- * A simple representation of filesystem.
+ * Read the index from BSER file on disk.
+ * @param indexPath - The BSER file to read from.
  */
-export interface FSItem {
-  name: string;
-  size: number;
-  mtimeMs: number;
-  children?: FSItem[];
-}
-
-/**
- * Get all image files under the directory.
- */
-export async function listImageFiles(dir: string, info: TotalFilesInfo): Promise<FSItem[] | undefined> {
-  // Read stats of all files under the dir in parallel.
-  const fileNames = await fs.readdir(dir);
-  const stats = await Promise.all(fileNames.map(n => fs.stat(`${dir}/${n}`)));
-  let items: FSItem[] = [];
-  // Iterate all files in parallel.
-  await Promise.all(fileNames.map(async (name, i) => {
-    const stat = stats[i];
-    const item = {name, size: stat.size, mtimeMs: stat.mtimeMs};
-    if (stat.isDirectory()) {
-      // Ignore the subdir if it contains no image files.
-      const children = await listImageFiles(`${dir}/${name}`, info);
-      if (children)
-        items.push({children, ...item});
-    } else if (stat.isFile() && isFileNameImage(name)) {
-      info.size += stat.size;
-      info.count += 1;
-      items.push(item);
-    }
-  }));
-  return items.length > 0 ? items : undefined;
-}
-
-// The file extensions we consider as images.
-const imageExtensions = [ 'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic' ];
-
-// Determine if a fileName is image.
-function isFileNameImage(fileName: string) {
-  return imageExtensions.includes(path.extname(fileName).substr(1)
-                                                        .toLowerCase());
+export async function readIndexFromDisk(indexPath: string): Promise<IndexMap> {
+  try {
+    const buffer = await fs.readFile(indexPath);
+    const json = bser.loadFromBuffer(buffer);
+    return new Map(json.index);
+  } catch {
+    return new Map();
+  }
 }

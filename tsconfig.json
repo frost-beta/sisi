@@ -3,6 +3,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
+    "allowJs": false,
     "module": "nodenext",
     "target": "es2023",
     "lib": [ "esnext" ]
