@@ -70,7 +70,10 @@ export async function search(query: string, targetDir?: string) {
   const clip = await loadClip();
   // Compute cosine similaries between the query and all the images.
   const {isTextQuery, queryEmbeddings} = await computeEmbeddingForQuery(clip, query);
-  const imageEmbeddings = mx.array(images.map(c => c.embedding));
+  const imageEmbeddings = mx.array(images.map(c => {
+    // When embedding is not available for the file, use [ 0, ...., 0 ].
+    return c.embedding ?? new Array(queryEmbeddings.shape[1]).fill(0);
+  }));
   const scores = nn.losses.cosineSimilarityLoss(queryEmbeddings, imageEmbeddings);
   // Get the indices sorted by higher scores.
   const topIndices = mx.argsort(scores).index(mx.Slice(null, null, -1));

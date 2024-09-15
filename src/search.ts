@@ -63,6 +63,7 @@ export function presentResults(results: {filePath: string, score: number}[]) {
     box-shadow: 0px 1px 8px 0px rgba(0,0,0,0.1);
     display: inline-block;
     width: 100%;
+    margin-bottom: 1em;
   }
   img {
     transition: box-shadow 0.3s ease-in-out;

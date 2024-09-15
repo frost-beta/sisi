@@ -1,8 +1,16 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import {readFileSync} from 'node:fs';
 
 import type {IndexMap} from './indexing.js';
+
+/**
+ * require('../package.json')
+ */
+export function getPackageJson(): {version: string} {
+  return JSON.parse(String(readFileSync(`${import.meta.dirname}/../package.json`)));
+}
 
 /**
  * Return the user's cache directory.

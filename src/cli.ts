@@ -2,9 +2,9 @@
 
 import {Builtins, Cli, Command, Option} from 'clipanion';
 
+import {getPackageJson} from './fs.js';
 import {index, search} from './sisi.js';
 import {presentResults} from './search.js';
-import packageJson from '../package.json' with {type: 'json'};
 
 export class IndexCommand extends Command {
   static paths = [ [ 'index' ] ];
@@ -60,7 +60,7 @@ export class SearchCommand extends Command {
 const cli = new Cli({
   binaryName: 'sisi',
   binaryLabel: 'Semantic Image Search CLI',
-  binaryVersion: packageJson.version,
+  binaryVersion: getPackageJson().version,
 });
 
 cli.register(Builtins.HelpCommand);
