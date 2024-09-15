@@ -49,13 +49,13 @@ export async function index(targetDir: string) {
   if (totalFiles.count > 0) {
     console.log(`${index.has(targetDir) ? 'Build' : 'Updat'}ing index for ${totalFiles.count} images...`);
     let lastUpdate = Date.now() - 2000;
-    let lastEta = '';
+    let lastEta = 'Waiting';
     bar = new SingleBar({
       etaBuffer: batchSize * 4,  // estimate eta on last 4 batches
       format: '{bar} | ETA: {eta_formatted} | {value}/{total}',
       formatTime(eta) {
         if (progress.size == 0)  // no eta when nothing has been processed
-          return 'Waiting';
+          return lastEta;
         if (Date.now() - lastUpdate < 5000)  // smooth eta updates
           return lastEta;
         lastUpdate = Date.now();
