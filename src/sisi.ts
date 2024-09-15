@@ -90,7 +90,11 @@ export async function index(targetDir: string) {
 /**
  * Search the query string from index.
  */
-export async function search(query: string, targetDir?: string): Promise<SearchResult[] | undefined> {
+interface SearchOptions {
+  maxResults: number;
+  targetDir?: string;
+}
+export async function search(query: string, {maxResults, targetDir}: SearchOptions): Promise<SearchResult[] | undefined> {
   if (targetDir)
     targetDir = path.resolve(targetDir);
   // List all the embeddings of images under targetDir from the index.
@@ -118,7 +122,6 @@ export async function search(query: string, targetDir?: string): Promise<SearchR
   // Get the indices sorted by higher scores.
   const topIndices = mx.argsort(scores).index(mx.Slice(null, null, -1));
   // Settings for the results, should probably be made options.
-  const maxResults = 20;
   const goodScore = isTextQuery ? 0.2 : 0.75;
   let bottomLineScore = isTextQuery ? 0.16 : 0.6;
   // Prepare the results.

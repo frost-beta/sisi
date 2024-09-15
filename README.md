@@ -51,7 +51,7 @@ CLI:
   sisi remove-index <target>
     Remove index for all items under target directory.
 
-  sisi search [--in #0] <query>
+  sisi search [--in #0] [--max #0] [--print] <query>
     Search the query string from indexed images.
 ```
 

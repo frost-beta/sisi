@@ -51,10 +51,14 @@ export class SearchCommand extends Command {
 
   query = Option.String();
   target = Option.String('--in', {description: 'The directory where images are searched.'});
+  max = Option.String('--max', 20, {description: 'The maximum number of results to return.'});
   print = Option.Boolean('--print', {description: 'Print the results to stdout.'});
 
   async execute() {
-    const results = await search(this.query, this.target);
+    const results = await search(this.query, {
+      maxResults: parseInt(this.max),
+      targetDir: this.target,
+    });
     if (!results) {
       const target = this.target ?? '<target>'
       console.error(`No images in index, please run "sisi index ${target}" first.`);
@@ -64,10 +68,12 @@ export class SearchCommand extends Command {
       console.error('There is no matching images');
       return;
     }
-    if (this.print)
+    if (this.print) {
       console.log(results.map(r => `${shortPath(r.filePath)}\n${r.score.toFixed(2)}`).join('\n'));
-    else
-      presentResults(this.query, results);
+      return;
+    }
+    console.log('Showing results in your browser...');
+    presentResults(this.query, results);
   }
 }
 
