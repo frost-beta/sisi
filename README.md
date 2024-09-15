@@ -1,6 +1,6 @@
 # Semantic Image Search CLI (sisi)
 
-CLI tool for semantic image search, locally without Internet.
+CLI tool for semantic image search, locally without using third party APIs.
 
 Powered by [node-mlx](https://github.com/frost-beta/node-mlx), a machine
 learning framework for Node.js.
@@ -96,6 +96,9 @@ Searching the images is computing cosine similarities between the query string
 and the indexed embeddings. There is no database involved here, everytime you do
 a search the computation is done for all the embeddings stored, which is very
 fast even when you have tens of thousands of pictures.
+
+The JavaScript implementation of the CLIP model is in a separate module:
+[frost-beta/clip](https://github.com/frost-beta/clip).
 
 ## License
 
