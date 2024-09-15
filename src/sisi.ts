@@ -8,6 +8,7 @@ import {
   listImageFiles,
 } from './fs.js';
 import {
+  batchSize,
   loadModel,
   loadClip,
 } from './model.js';
@@ -47,13 +48,18 @@ export async function index(targetDir: string) {
   let progress = {size: 0, count: 0};
   if (totalFiles.count > 0) {
     console.log(`${index.has(targetDir) ? 'Build' : 'Updat'}ing index for ${totalFiles.count} images...`);
-    const start = Date.now();
+    let lastUpdate = Date.now() - 2000;
+    let lastEta = '';
     bar = new SingleBar({
+      etaBuffer: batchSize * 4,  // estimate eta on last 4 batches
       format: '{bar} | ETA: {eta_formatted} | {value}/{total}',
       formatTime(eta) {
-        if (progress.size == 0)
+        if (progress.size == 0)  // no eta when nothing has been processed
           return 'Waiting';
-        return prettyMilliseconds(eta * 1000, {compact: true});
+        if (Date.now() - lastUpdate < 5000)  // smooth eta updates
+          return lastEta;
+        lastUpdate = Date.now();
+        return lastEta = prettyMilliseconds(eta * 1000, {compact: true});
       },
     }, Presets.shades_grey);
     bar.start(totalFiles.count, 0);

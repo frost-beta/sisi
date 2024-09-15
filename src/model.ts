@@ -9,7 +9,10 @@ import * as queue from '@henrygd/queue';
 
 import {getCacheDir, shortPath} from './fs.js';
 
-const batchSize = getBatchSize();
+/**
+ * How many image embeddings are computed in on batch.
+ */
+export const batchSize = getBatchSize();
 
 /**
  * Each item kept in batch.
