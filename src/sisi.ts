@@ -18,35 +18,38 @@ export async function index(targetDir: string) {
   targetDir = path.resolve(targetDir);
   const totalFiles = {size: 0, count: 0};
   const items = await listImageFiles(targetDir, totalFiles, index);
-  // Quit if there is nothing to do.
-  if (totalFiles.count == 0) {
-    if (!index.has(targetDir)) {
-      console.error('No images under directory:', targetDir);
-      return;
-    }
-    console.log('Index is up to date.');
+  // Quit if building index for a directory for the first time and there is no
+  // images in it.
+  if (totalFiles.count == 0 && !index.has(targetDir)) {
+    console.error('No images under directory:', targetDir);
     return;
   }
   // Download and load model.
   const model = await loadModel();
   // Create progress bar for indexing.
-  console.log(`${index.has(targetDir) ? 'Build' : 'Updat'}ing index for ${totalFiles.count} images...`);
-  const bar = new SingleBar({
-    format: '{bar} | ETA: {eta}s | {value}/{total}',
-  }, Presets.shades_grey);
-  bar.start(totalFiles.count, 0);
+  let bar: SingleBar | undefined;
+  if (totalFiles.count > 0) {
+    console.log(`${index.has(targetDir) ? 'Build' : 'Updat'}ing index for ${totalFiles.count} images...`);
+    bar = new SingleBar({
+      format: '{bar} | ETA: {eta}s | {value}/{total}',
+    }, Presets.shades_grey);
+    bar.start(totalFiles.count, 0);
+  }
   // Build index and save it.
   try {
-    await buildIndex(model, targetDir, items, ({count}) => bar.update(count), index);
+    await buildIndex(model, targetDir, items, ({count}) => bar?.update(count), index);
     await writeIndexToDisk(index, indexPath);
   } catch (error) {
     // Stop bar before printing error.
-    bar.stop();
+    bar?.stop();
     console.error(error);
     process.exit(1);
   }
-  bar.stop();
-  console.log(`Index saved to: ${shortPath(indexPath)}`);
+  bar?.stop();
+  if (totalFiles.count == 0)
+    console.log('Index is up to date.');
+  else
+    console.log(`Index saved to: ${shortPath(indexPath)}`);
   // Cleanup.
   model.close();
 }

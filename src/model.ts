@@ -75,9 +75,7 @@ export class Model {
    * @param filePath - Path of the image file.
    */
   async computeImageEmbeddings(filePath: string): Promise<number[]> {
-    const image = await this.queueProcessImage.add(async () => {
-      return await this.imageProcessor.processImage(filePath);
-    });
+    const image = await this.queueProcessImage.add(() => this.imageProcessor.processImage(filePath));
     return await this.queueComputeEmbeddings.add(() => this.addToBatch(image));
   }
 
