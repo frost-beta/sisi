@@ -1,11 +1,11 @@
 # Semantic Image Search CLI (sisi)
 
-:construction:
-
 CLI tool for semantic image search, locally without Internet.
 
 Powered by [node-mlx](https://github.com/frost-beta/node-mlx), a machine
 learning framework for Node.js.
+
+https://github.com/user-attachments/assets/66e6e437-c27b-48cf-80cc-a5a0c8c0bdfb
 
 ## Supported platforms
 
@@ -86,6 +86,16 @@ It works with local files too:
 ```console
 sisi search file:///Users/Your/Pictures/cat.jpg
 ```
+
+## Under the hood
+
+The index is built by computing the embeddings of images using the [CLIP
+model](https://github.com/openai/CLIP), and then stored in a binary JSON file.
+
+Searching the images is computing cosine similarities between the query string
+and the indexed embeddings. There is no database involved here, everytime you do
+a search the computation is done for all the embeddings stored, which is very
+fast even when you have tens of thousands of pictures.
 
 ## License
 

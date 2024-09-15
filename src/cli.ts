@@ -51,7 +51,7 @@ export class SearchCommand extends Command {
 
   query = Option.String();
   target = Option.String('--in', {description: 'The directory where images are searched.'});
-  max = Option.String('--max', 20, {description: 'The maximum number of results to return.'});
+  max = Option.String('--max', '20', {description: 'The maximum number of results to return.'});
   print = Option.Boolean('--print', {description: 'Print the results to stdout.'});
 
   async execute() {
