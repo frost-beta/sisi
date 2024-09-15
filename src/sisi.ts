@@ -1,4 +1,5 @@
 import path from 'node:path';
+import prettyMilliseconds from 'pretty-ms';
 import {Presets, SingleBar} from 'cli-progress';
 import {core as mx, nn} from '@frost-beta/mlx';
 
@@ -43,16 +44,26 @@ export async function index(targetDir: string) {
   const model = await loadModel();
   // Create progress bar for indexing.
   let bar: SingleBar | undefined;
+  let progress = {size: 0, count: 0};
   if (totalFiles.count > 0) {
     console.log(`${index.has(targetDir) ? 'Build' : 'Updat'}ing index for ${totalFiles.count} images...`);
+    const start = Date.now();
     bar = new SingleBar({
-      format: '{bar} | ETA: {eta}s | {value}/{total}',
+      format: '{bar} | ETA: {eta_formatted} | {value}/{total}',
+      formatTime(eta) {
+        if (progress.size == 0)
+          return 'Waiting';
+        return prettyMilliseconds(eta * 1000, {compact: true});
+      },
     }, Presets.shades_grey);
     bar.start(totalFiles.count, 0);
   }
   // Build index and save it.
   try {
-    await buildIndex(model, targetDir, items, ({count}) => bar?.update(count), index);
+    await buildIndex(model, targetDir, items, index, (p) => {
+      bar?.update(p.count);
+      progress = p;
+    });
     await removeInvalidIndex(index);
     await writeIndexToDisk(index, indexPath);
   } catch (error) {

@@ -39,6 +39,7 @@
     "bser": "2.1.1",
     "cli-progress": "3.12.0",
     "clipanion": "4.0.0-rc.4",
-    "openurl2": "1.0.1"
+    "openurl2": "1.0.1",
+    "pretty-ms": "9.1.0"
   }
 }

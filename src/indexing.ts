@@ -34,14 +34,14 @@ interface IndexFileEntry {
  * @param model - The CLIP model.
  * @param target - Target directory which contains images.
  * @param items - The items under the target directory.
- * @param report - Callback for receiving the indexing progress.
  * @param index - When specified, the passed index will be updated.
+ * @param report - Callback for receiving the indexing progress.
  */
 export async function buildIndex(model: Model,
                                  target: string,
                                  items: FSItem[],
-                                 report: (progress: TotalFilesInfo) => void,
-                                 index: IndexMap = new Map()) {
+                                 index: IndexMap = new Map(),
+                                 report?: (progress: TotalFilesInfo) => void) {
   // Record progress.
   const progress: TotalFilesInfo = {size: 0, count: 0};
   // Handle files in dir recursively.
@@ -69,9 +69,11 @@ export async function buildIndex(model: Model,
         // Failed to process image, should probably log error somewhere.
       }
       files.push({name, mtimeMs, embedding});
-      progress.size += size;
-      progress.count += 1;
-      report(progress);
+      if (report) {
+        progress.size += size;
+        progress.count += 1;
+        report(progress);
+      }
     }));
     // Add dir to index if it contains image files.
     if (files.length > 0) {
@@ -82,7 +84,7 @@ export async function buildIndex(model: Model,
       return false;
     }
   };
-  await buildIndexForDir(target, items);
+  await buildIndexForDir(path.resolve(target), items);
   return index;
 }
 
