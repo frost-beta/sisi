@@ -39,9 +39,17 @@ export async function computeEmbeddingForQuery(clip: Clip, query: string) {
 }
 
 /**
+ * The search result.
+ */
+export interface SearchResult {
+  filePath: string;
+  score: number;
+}
+
+/**
  * Print the results in HTML and show it in a browser.
  */
-export function presentResults(query: string, results: {filePath: string, score: number}[]) {
+export function presentResults(query: string, results: SearchResult[]) {
   const imgs = results.map(r => {
     return `
 <div>

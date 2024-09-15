@@ -5,7 +5,7 @@ import {core as mx, nn} from '@frost-beta/mlx';
 import {shortPath, listImageFiles} from './fs.js';
 import {loadModel, loadClip} from './model.js';
 import {buildIndex, getIndexPath, writeIndexToDisk, readIndexFromDisk} from './indexing.js';
-import {computeEmbeddingForQuery, presentResults} from './search.js';
+import {SearchResult, computeEmbeddingForQuery, presentResults} from './search.js';
 
 /**
  * Build index for the dir.
@@ -57,7 +57,9 @@ export async function index(targetDir: string) {
 /**
  * Search the query string from index.
  */
-export async function search(query: string, targetDir?: string) {
+export async function search(query: string, targetDir?: string): SearchResult[] | undefined {
+  if (targetDir)
+    targetDir = path.resolve(targetDir);
   // List all the embeddings of images under targetDir from the index.
   const index = await readIndexFromDisk();
   const images: {filePath: string, embedding: number[]}[] = [];
@@ -69,6 +71,8 @@ export async function search(query: string, targetDir?: string) {
     for (const file of value.files)
       images.push({filePath: `${dir}/${file.name}`, embedding: file.embedding});
   }
+  if (images.length == 0)
+    return;
   // As we are handling only one query, just load the model in main thread.
   const clip = await loadClip();
   // Compute cosine similaries between the query and all the images.
@@ -85,7 +89,7 @@ export async function search(query: string, targetDir?: string) {
   const goodScore = isTextQuery ? 0.2 : 0.75;
   let bottomLineScore = isTextQuery ? 0.16 : 0.6;
   // Prepare the results.
-  const results: {filePath: string, score: number}[] = [];
+  const results: SearchResult[] = [];
   for (let i = 0; i < Math.min(topIndices.size, maxResults); ++i) {
     const index = topIndices.index(i);
     const score = scores.index(index).item() as number;
@@ -116,13 +120,16 @@ export async function listIndex() {
  * Remove items under the directory in index.
  */
 export async function removeIndex(targetDir: string) {
+  targetDir = path.resolve(targetDir);
+  const removed: string[] = [];
   const indexPath = getIndexPath();
   const index = await readIndexFromDisk(indexPath);
   for (const key of index.keys()) {
     if (key.startsWith(targetDir)) {
-      console.log('Index deleted:', key);
+      removed.push(key);
       index.delete(key);
     }
   }
   await writeIndexToDisk(index, indexPath);
+  return removed;
 }

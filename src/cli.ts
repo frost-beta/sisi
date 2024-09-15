@@ -55,6 +55,15 @@ export class SearchCommand extends Command {
 
   async execute() {
     const results = await search(this.query, this.target);
+    if (!results) {
+      const target = this.target ?? '<target>'
+      console.error(`No images in index, please run "sisi index ${target}" first.`);
+      return;
+    }
+    if (results.length == 0) {
+      console.error('There is no matching images');
+      return;
+    }
     if (this.print)
       console.log(results.map(r => `${shortPath(r.filePath)}\n${r.score.toFixed(2)}`).join('\n'));
     else
@@ -88,7 +97,9 @@ export class RemoveIndexCommand extends Command {
   target = Option.String();
 
   async execute() {
-    await removeIndex(this.target);
+    const removed = await removeIndex(this.target);
+    for (const dir of removed)
+      console.log('Index deleted:', dir);
   }
 }
 
