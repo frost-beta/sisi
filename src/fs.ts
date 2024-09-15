@@ -29,6 +29,22 @@ export function getCacheDir(): string {
 }
 
 /**
+ * Return the user's app data directory.
+ */
+export function getConfigDir(): string {
+  const {env, platform} = process;
+  if (env.XDG_CONFIG_HOME)
+    return `${env.XDG_CONFIG_HOME}/sisi`;
+  if (platform == 'darwin')
+    return `${os.homedir()}/Library/Application Support/sisi`;
+  if (platform != 'win32')
+    return `${os.homedir()}/.config/sisi`;
+  if (env.APPDATA)
+    return `${env.APPDATA}/sisi`;
+  return `${os.homedir()}/AppData/Roaming/sisi`;
+}
+
+/**
  * Replace the home dir in path with ~ when possible.
  */
 export function shortPath(longPath: string): string {

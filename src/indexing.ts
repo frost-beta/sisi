@@ -3,7 +3,7 @@ import path from 'node:path';
 import bser from 'bser';
 
 import {Model} from './model.js';
-import {FSItem, TotalFilesInfo, getCacheDir} from './fs.js';
+import {FSItem, TotalFilesInfo, getConfigDir} from './fs.js';
 
 // The JSON format for storing the index on disk.
 interface IndexDatabase {
@@ -109,7 +109,7 @@ export async function removeInvalidIndex(index: IndexMap) {
  * Return the path to the index file.
  */
 export function getIndexPath() {
-  return `${getCacheDir()}/index.bser`;
+  return `${getConfigDir()}/index.bser`;
 }
 
 /**
