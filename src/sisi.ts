@@ -36,8 +36,15 @@ export async function index(targetDir: string) {
   }, Presets.shades_grey);
   bar.start(totalFiles.count, 0);
   // Build index and save it.
-  await buildIndex(model, targetDir, items, ({count}) => bar.update(count), index);
-  await writeIndexToDisk(index, indexPath);
+  try {
+    await buildIndex(model, targetDir, items, ({count}) => bar.update(count), index);
+    await writeIndexToDisk(index, indexPath);
+  } catch (error) {
+    // Stop bar before printing error.
+    bar.stop();
+    console.error(error);
+    process.exit(1);
+  }
   bar.stop();
   console.log(`Index saved to: ${shortPath(indexPath)}`);
   // Cleanup.
