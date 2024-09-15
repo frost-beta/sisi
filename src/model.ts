@@ -11,8 +11,12 @@ import {getCacheDir, shortPath} from './fs.js';
 
 /**
  * How many image embeddings are computed in on batch.
+ *
+ * After testing on x64 and arm64 Macs, hard-coding to 4 seems to be the best
+ * value, a larger value uses more RAM and is not faster, and smaller value can
+ * get slower or unstable.
  */
-export const batchSize = getBatchSize();
+export const batchSize = 4;
 
 /**
  * Each item kept in batch.
@@ -172,20 +176,4 @@ async function getModelDir(model = 'openai/clip-vit-large-patch14'): Promise<str
     console.log(`Model saved to: ${shortPath(modelDir)}/`);
   }
   return modelDir;
-}
-
-/**
- * Determine a proper batchSize for the machine.
- */
-function getBatchSize() {
-  // By default use the same number with uv's thread pool size.
-  let batchSize = 4;
-  if (process.env.UV_THREADPOOL_SIZE)
-    batchSize = parseInt(process.env.UV_THREADPOOL_SIZE);
-  // For macOS with M chips, grow it depending on RAM.
-  if (process.platform == 'darwin' && process.arch == 'arm64') {
-    const ram = os.freemem() / (1024 * 1024 * 1024);
-    batchSize = Math.max(batchSize, ram > 16 ? 16 : 8);
-  }
-  return batchSize;
 }
