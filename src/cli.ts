@@ -78,7 +78,9 @@ export class ListIndexCommand extends Command {
   });
 
   async execute() {
-    console.log((await listIndex()).map(shortPath).join('\n'));
+    const results = await listIndex();
+    if (results.length > 0)
+      console.log(results.map(shortPath).join('\n'));
   }
 }
 

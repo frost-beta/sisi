@@ -80,10 +80,9 @@ export async function listImageFiles(dir: string, info: TotalFilesInfo, index?: 
       needsUpdate: true,
     };
     if (stat.isDirectory()) {
-      // Directories are always kept in results even if they contain no images,
-      // because we need the directory structure for updating index.
       const children = await listImageFiles(`${dir}/${name}`, info, index);
-      items.push({children, ...item});
+      if (children.length > 0)
+        items.push({children, ...item});
     } else if (stat.isFile() && isFileNameImage(name)) {
       // Find out if the file has been modified since last indexing.
       if (dirEntry?.files?.find(i => i.name == name)?.mtimeMs >= stat.mtimeMs)

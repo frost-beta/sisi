@@ -2,13 +2,29 @@ import path from 'node:path';
 import {Presets, SingleBar} from 'cli-progress';
 import {core as mx, nn} from '@frost-beta/mlx';
 
-import {shortPath, listImageFiles} from './fs.js';
-import {loadModel, loadClip} from './model.js';
-import {buildIndex, getIndexPath, writeIndexToDisk, readIndexFromDisk} from './indexing.js';
-import {SearchResult, computeEmbeddingForQuery, presentResults} from './search.js';
+import {
+  shortPath,
+  listImageFiles,
+} from './fs.js';
+import {
+  loadModel,
+  loadClip,
+} from './model.js';
+import {
+  buildIndex,
+  removeInvalidIndex,
+  getIndexPath,
+  writeIndexToDisk,
+  readIndexFromDisk,
+} from './indexing.js';
+import {
+  SearchResult,
+  computeEmbeddingForQuery,
+  presentResults,
+} from './search.js';
 
 /**
- * Build index for the dir.
+ * Build or update index for the dir.
  */
 export async function index(targetDir: string) {
   // Read existing index.
@@ -18,9 +34,8 @@ export async function index(targetDir: string) {
   targetDir = path.resolve(targetDir);
   const totalFiles = {size: 0, count: 0};
   const items = await listImageFiles(targetDir, totalFiles, index);
-  // Quit if building index for a directory for the first time and there is no
-  // images in it.
-  if (totalFiles.count == 0 && !index.has(targetDir)) {
+  // Quit if building index for the first time and there is no images in target.
+  if (totalFiles.count == 0 && index.size == 0) {
     console.error('No images under directory:', targetDir);
     return;
   }
@@ -38,6 +53,7 @@ export async function index(targetDir: string) {
   // Build index and save it.
   try {
     await buildIndex(model, targetDir, items, ({count}) => bar?.update(count), index);
+    await removeInvalidIndex(index);
     await writeIndexToDisk(index, indexPath);
   } catch (error) {
     // Stop bar before printing error.
@@ -57,7 +73,7 @@ export async function index(targetDir: string) {
 /**
  * Search the query string from index.
  */
-export async function search(query: string, targetDir?: string): SearchResult[] | undefined {
+export async function search(query: string, targetDir?: string): Promise<SearchResult[] | undefined> {
   if (targetDir)
     targetDir = path.resolve(targetDir);
   // List all the embeddings of images under targetDir from the index.

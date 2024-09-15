@@ -18,8 +18,7 @@ interface IndexDatabase {
 export type IndexMap = Map<string, IndexDirEntry>;
 
 interface IndexDirEntry {
-  dirs?: string[];
-  files?: IndexFileEntry[];
+  files: IndexFileEntry[];
 }
 
 interface IndexFileEntry {
@@ -48,21 +47,18 @@ export async function buildIndex(model: Model,
   // Handle files in dir recursively.
   const buildIndexForDir = async (dir: string, items: FSItem[]) => {
     // Get old entry from index and prepare for new.
-    const dirEntry: IndexDirEntry = index.get(dir) ?? {};
-    let dirs: string[] = [];
+    const existingEntry = index.get(dir);
     let files: IndexFileEntry[] = [];
     // Iterate all files.
     await Promise.all(items.map(async ({name, size, mtimeMs, needsUpdate, children}) => {
       // Handle directories recursively.
       if (children) {
-        // Add directory to entry if it contains images.
-        if (await buildIndexForDir(`${dir}/${name}`, children))
-          dirs.push(name);
+        await buildIndexForDir(`${dir}/${name}`, children);
         return;
       }
       // Reuse the existing entry if it is not out-dated.
       if (!needsUpdate) {
-        files.push(dirEntry.files!.find(i => i.name == name)!);
+        files.push(existingEntry!.files.find(i => i.name == name)!);
         return;
       }
       // Compute image's embedding and save it.
@@ -77,21 +73,9 @@ export async function buildIndex(model: Model,
       progress.count += 1;
       report(progress);
     }));
-    // Remove entries from index if they no longer exist.
-    if (dirEntry.dirs) {
-      for (const old of dirEntry.dirs) {
-        if (!dirs.includes(old))
-          index.delete(`${dir}/${old}`);
-      }
-    }
-    // Add dir to index if it contains image files or its subdir does.
-    if (dirs.length > 0 || files.length > 0) {
-      const newEntry: IndexDirEntry = {};
-      if (dirs.length > 0)
-        newEntry.dirs = dirs;
-      if (files.length > 0)
-        newEntry.files = files;
-      index.set(dir, newEntry);
+    // Add dir to index if it contains image files.
+    if (files.length > 0) {
+      index.set(dir, {files});
       return true;
     } else {
       index.delete(dir);
@@ -100,6 +84,23 @@ export async function buildIndex(model: Model,
   };
   await buildIndexForDir(target, items);
   return index;
+}
+
+/**
+ * Remove non-exist directories from index.
+ */
+export async function removeInvalidIndex(index: IndexMap) {
+  const invalidKeys: string[] = [];
+  await Promise.all(Array.from(index.keys()).map(async (dir) => {
+    try {
+      await fs.access(dir, fs.constants.R_OK | fs.constants.X_OK);
+    } catch (error) {
+      invalidKeys.push(dir);
+    }
+  }));
+  for (const key of invalidKeys) {
+    index.delete(key);
+  }
 }
 
 /**
