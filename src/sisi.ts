@@ -5,6 +5,7 @@ import {core as mx, nn} from '@frost-beta/mlx';
 import {shortPath, listImageFiles} from './fs.js';
 import {loadModel, loadClip} from './model.js';
 import {buildIndex, getIndexPath, writeIndexToDisk, readIndexFromDisk} from './indexing.js';
+import {computeEmbeddingForQuery} from './search.js';
 
 /**
  * Build index for the dir.
@@ -61,15 +62,15 @@ export async function search(query: string, targetDir?: string) {
   // As we are handling only one query, just load the model in main thread.
   const clip = await loadClip();
   // Compute cosine similaries between the query and all the images.
-  const {labelEmbeddings} = clip.computeEmbeddings({labels: [ query ]});
+  const {isTextQuery, queryEmbeddings} = await computeEmbeddingForQuery(clip, query);
   const imageEmbeddings = mx.array(images.map(c => c.embedding));
-  const scores = nn.losses.cosineSimilarityLoss(labelEmbeddings, imageEmbeddings);
+  const scores = nn.losses.cosineSimilarityLoss(queryEmbeddings, imageEmbeddings);
   // Get the indices sorted by higher scores.
   const topIndices = mx.argsort(scores).index(mx.Slice(null, null, -1));
   // Settings for the results, should probably be made options.
-  const maxResults = 20;
-  const goodScore = 0.2;
-  let bottomLineScore = 0.16;
+  const maxResults = 10;
+  const goodScore = isTextQuery ? 0.2 : 0.75;
+  let bottomLineScore = isTextQuery ? 0.16 : 0.6;
   // Prepare the results.
   const results: {filePath: string, score: number}[] = [];
   for (let i = 0; i < Math.min(topIndices.size, maxResults); ++i) {
