@@ -97,3 +97,26 @@ export async function search(query: string, targetDir?: string) {
   }
   return results;
 }
+
+/**
+ * Return the items in the index.
+ */
+export async function listIndex() {
+  const index = await readIndexFromDisk();
+  return Array.from(index.keys());
+}
+
+/**
+ * Remove items under the directory in index.
+ */
+export async function removeIndex(targetDir: string) {
+  const indexPath = getIndexPath();
+  const index = await readIndexFromDisk(indexPath);
+  for (const key of index.keys()) {
+    if (key.startsWith(targetDir)) {
+      console.log('Index deleted:', key);
+      index.delete(key);
+    }
+  }
+  await writeIndexToDisk(index, indexPath);
+}

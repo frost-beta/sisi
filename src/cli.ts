@@ -2,8 +2,8 @@
 
 import {Builtins, Cli, Command, Option} from 'clipanion';
 
-import {getPackageJson} from './fs.js';
-import {index, search} from './sisi.js';
+import {getPackageJson, shortPath} from './fs.js';
+import {index, search, listIndex, removeIndex} from './sisi.js';
 import {presentResults} from './search.js';
 
 export class IndexCommand extends Command {
@@ -57,6 +57,36 @@ export class SearchCommand extends Command {
   }
 }
 
+export class ListIndexCommand extends Command {
+  static paths = [ [ 'list-index' ] ];
+  static usage = Command.Usage({
+    description: 'List the directories in the index.',
+  });
+
+  async execute() {
+    console.log((await listIndex()).map(shortPath).join('\n'));
+  }
+}
+
+export class RemoveIndexCommand extends Command {
+  static paths = [ [ 'remove-index' ] ];
+  static usage = Command.Usage({
+    description: 'Remove index for all items under target directory.',
+    examples: [
+      [
+        'Remove index for everything under ~/Pictures/',
+        '$0 remove-index ~/Pictures/',
+      ],
+    ]
+  });
+
+  target = Option.String();
+
+  async execute() {
+    await removeIndex(this.target);
+  }
+}
+
 const cli = new Cli({
   binaryName: 'sisi',
   binaryLabel: 'Semantic Image Search CLI',
@@ -67,4 +97,6 @@ cli.register(Builtins.HelpCommand);
 cli.register(Builtins.VersionCommand);
 cli.register(IndexCommand);
 cli.register(SearchCommand);
+cli.register(ListIndexCommand);
+cli.register(RemoveIndexCommand);
 cli.runExit(process.argv.slice(2)).then(() => process.exit());

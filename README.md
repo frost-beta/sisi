@@ -45,6 +45,12 @@ CLI:
   sisi index <target>
     Build or update index for images under target directory.
 
+  sisi list-index
+    List the directories in the index.
+
+  sisi remove-index <target>
+    Remove index for all items under target directory.
+
   sisi search [--in #0] <query>
     Search the query string from indexed images.
 ```
