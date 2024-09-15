@@ -32,7 +32,11 @@ export function getCacheDir(): string {
  * Replace the home dir in path with ~ when possible.
  */
 export function shortPath(longPath: string): string {
-  return longPath.replace(os.homedir(), '~');
+  const homeDir = `${os.homedir()}/`;
+  if (longPath.startsWith(homeDir))
+    return '~/' + longPath.substr(homeDir.length);
+  else
+    return longPath;
 }
 
 /**

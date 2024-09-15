@@ -96,7 +96,10 @@ export async function search(query: string, targetDir?: string) {
       // No need to continue after seeing a bad result.
       break;
     }
-    results.push({filePath: images[index.item() as number].filePath, score});
+    results.push({
+      filePath: images[index.item() as number].filePath,
+      score: score * 100,
+    });
   }
   return results;
 }

@@ -50,10 +50,15 @@ export class SearchCommand extends Command {
   });
 
   query = Option.String();
-  target = Option.String('--in', {description: 'The directory where images are searched'});
+  target = Option.String('--in', {description: 'The directory where images are searched.'});
+  print = Option.Boolean('--print', {description: 'Print the results to stdout.'});
 
   async execute() {
-    presentResults(await search(this.query, this.target));
+    const results = await search(this.query, this.target);
+    if (this.print)
+      console.log(results.map(r => `${shortPath(r.filePath)}\n${r.score.toFixed(2)}`).join('\n'));
+    else
+      presentResults(this.query, results);
   }
 }
 

@@ -41,18 +41,19 @@ export async function computeEmbeddingForQuery(clip: Clip, query: string) {
 /**
  * Print the results in HTML and show it in a browser.
  */
-export function presentResults(results: {filePath: string, score: number}[]) {
+export function presentResults(query: string, results: {filePath: string, score: number}[]) {
   const imgs = results.map(r => {
     return `
 <div>
   <a target="_blank" href="${(pathToFileURL(r.filePath))}">
     <img src="${pathToFileURL(r.filePath)}">
   </a>
-  <span>Score: ${(r.score * 100).toFixed(2)}</span>
+  <span>Score: ${r.score.toFixed(2)}</span>
 </div>`;
   });
   const html =
 `<head>
+<title>sisi search "${query}"</title>
 <style>
   body {
     column-count: ${Math.min(results.length, 5)};
@@ -72,6 +73,7 @@ export function presentResults(results: {filePath: string, score: number}[]) {
   }
   span {
     line-height: 1.5em;
+    font-family: system-ui;
     display: flex;
     justify-content: center
   }
