@@ -13,7 +13,11 @@
   },
   "author": "zcbenz",
   "license": "MIT",
-  "keywords": [ "mlx", "search", "image" ],
+  "keywords": [
+    "mlx",
+    "search",
+    "image"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/frost-beta/sisi.js.git"
@@ -34,6 +38,7 @@
     "@henrygd/queue": "1.0.6",
     "bser": "2.1.1",
     "cli-progress": "3.12.0",
-    "clipanion": "4.0.0-rc.4"
+    "clipanion": "4.0.0-rc.4",
+    "openurl2": "1.0.1"
   }
 }

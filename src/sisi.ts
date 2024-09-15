@@ -5,7 +5,7 @@ import {core as mx, nn} from '@frost-beta/mlx';
 import {shortPath, listImageFiles} from './fs.js';
 import {loadModel, loadClip} from './model.js';
 import {buildIndex, getIndexPath, writeIndexToDisk, readIndexFromDisk} from './indexing.js';
-import {computeEmbeddingForQuery} from './search.js';
+import {computeEmbeddingForQuery, presentResults} from './search.js';
 
 /**
  * Build index for the dir.
@@ -68,7 +68,7 @@ export async function search(query: string, targetDir?: string) {
   // Get the indices sorted by higher scores.
   const topIndices = mx.argsort(scores).index(mx.Slice(null, null, -1));
   // Settings for the results, should probably be made options.
-  const maxResults = 10;
+  const maxResults = 20;
   const goodScore = isTextQuery ? 0.2 : 0.75;
   let bottomLineScore = isTextQuery ? 0.16 : 0.6;
   // Prepare the results.
@@ -85,5 +85,5 @@ export async function search(query: string, targetDir?: string) {
     }
     results.push({filePath: images[index.item() as number].filePath, score});
   }
-  console.log(results);
+  return results;
 }

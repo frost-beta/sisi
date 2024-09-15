@@ -3,6 +3,7 @@
 import {Builtins, Cli, Command, Option} from 'clipanion';
 
 import {index, search} from './sisi.js';
+import {presentResults} from './search.js';
 import packageJson from '../package.json' with {type: 'json'};
 
 export class IndexCommand extends Command {
@@ -30,8 +31,20 @@ export class SearchCommand extends Command {
     description: 'Search the query string from indexed images.',
     examples: [
       [
-        'Search "cat" in all files in the index',
+        'Search pictures from all indexed images:',
         '$0 search cat',
+      ],
+      [
+        'Search from the ~/Pictures/ directory:',
+        '$0 search cat --in ~/Pictures/',
+      ],
+      [
+        'Search images with remote image:',
+        '$0 search https://images.pexels.com/photos/45201/kitty-cat-kitten-pet-45201.jpeg',
+      ],
+      [
+        'Search images with local image:',
+        '$0 search file:///Users/Your/Pictures/cat.jpg',
       ],
     ]
   });
@@ -40,7 +53,7 @@ export class SearchCommand extends Command {
   target = Option.String('--in', {description: 'The directory where images are searched'});
 
   async execute() {
-    await search(this.query, this.target);
+    presentResults(await search(this.query, this.target));
   }
 }
 
