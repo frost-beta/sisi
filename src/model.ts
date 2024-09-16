@@ -67,7 +67,7 @@ export class Model {
    * @param modelDir - Path to the CLIP model.
    */
   constructor(modelDir: string) {
-    const options = {workerData: {modelDir}};
+    const options = {workerData: {batchSize, modelDir}};
     if ((process as any)._preload_modules.length > 0) {
       // Hack for tsx, can be removed when tsx supports worker in future.
       this.worker = new Worker(`${import.meta.dirname}/../dist/worker.js`, options);
@@ -159,7 +159,7 @@ export async function loadModel() {
  * Create the CLIP model.
  */
 export async function loadClip() {
-  return new Clip(await getModelDir());
+  return new Clip(await getModelDir(), batchSize);
 }
 
 /**

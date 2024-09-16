@@ -3,7 +3,7 @@ import {Clip} from '@frost-beta/clip';
 
 import type {BatchMessage, BatchResponse} from './model.js';
 
-const clip = new Clip(workerData.modelDir);
+const clip = new Clip(workerData.modelDir, workerData.batchSize);
 
 parentPort.on('message', ({id, labels, images}: BatchMessage) => {
   if (id == 0)
