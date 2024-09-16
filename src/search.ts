@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {ImageInputType, ClipInput, Clip} from '@frost-beta/clip';
-import {core as mx} from '@frost-beta/mlx';
 import {open} from 'openurl2';
 
 /**

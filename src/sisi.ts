@@ -1,7 +1,7 @@
 import path from 'node:path';
 import prettyMilliseconds from 'pretty-ms';
 import {Presets, SingleBar} from 'cli-progress';
-import {core as mx, nn} from '@frost-beta/mlx';
+import {Clip} from '@frost-beta/clip';
 
 import {
   shortPath,
@@ -114,20 +114,18 @@ export async function search(query: string, {maxResults, targetDir}: SearchOptio
   const clip = await loadClip();
   // Compute cosine similaries between the query and all the images.
   const {isTextQuery, queryEmbeddings} = await computeEmbeddingForQuery(clip, query);
-  const imageEmbeddings = mx.array(images.map(c => {
+  const imageEmbeddings = images.map(c => {
     // When embedding is not available for the file, use [ 0, ...., 0 ].
     return c.embedding ?? new Array(queryEmbeddings.shape[1]).fill(0);
-  }));
-  const scores = nn.losses.cosineSimilarityLoss(queryEmbeddings, imageEmbeddings);
-  // Get the indices sorted by higher scores.
-  const topIndices = mx.argsort(scores).index(mx.Slice(null, null, -1));
+  });
+  const [ scores, indices ] = Clip.computeCosineSimilarities(queryEmbeddings, imageEmbeddings);
   // Settings for the results, should probably be made options.
   const goodScore = isTextQuery ? 0.2 : 0.75;
   let bottomLineScore = isTextQuery ? 0.16 : 0.6;
   // Prepare the results.
   const results: SearchResult[] = [];
-  for (let i = 0; i < Math.min(topIndices.size, maxResults); ++i) {
-    const index = topIndices.index(i);
+  for (let i = 0; i < Math.min(indices.size, maxResults); ++i) {
+    const index = indices.index(i);
     const score = scores.index(index).item() as number;
     if (score > goodScore) {
       // When there is good result, we don't need the not-so-good results.
